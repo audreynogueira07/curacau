@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mapa – Roteiro Curaçao (detalhado)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  html, body { height: 100%; margin: 0; background:#0b1022; }
+  #map { position: fixed; inset: 0; }
+  .fab-bar { position: fixed; left: 8px; right: 8px; bottom: 10px; display:flex; gap:8px; z-index:1000; }
+  .btn { flex:1; background:#0ea5e9; color:#fff; border:0; border-radius:12px; padding:12px; font-weight:800; }
+  .btn:active { transform: scale(.98); }
+  .leaflet-popup-content-wrapper { border-radius: 12px; }
+  .leaflet-popup-content { font-size: 14px; line-height:1.25; }
+  .tip-badge { display:inline-block; margin-top:6px; padding:6px 8px; font-size:12px; border-radius:8px; background:rgba(255,255,255,.08); }
+  .legend-dot { display:inline-block; width:10px; height:10px; border-radius:999px; margin-right:6px; border:1px solid #fff; }
+  .leaflet-control-layers { font-size:14px; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="fab-bar">
+  <button class="btn" id="fitBtn">Centralizar tudo</button>
+  <button class="btn" id="routeBtn">Rota do dia visível</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const DATA = [{'day': 'Dia 1 – Chegada e ambientação (Praias estruturadas e perto da cidade)', 'color': '#e74c3c', 'tip': 'Reserve sua interação com golfinhos com antecedência.', 'places': [{'name': 'Mambo Beach', 'lat': 12.0869, 'lng': -68.899, 'desc': 'Praia com excelente estrutura, ideal para começar com conforto.'}, {'name': 'Sea Aquarium Park e Dolphin Academy', 'lat': 12.0855, 'lng': -68.8965, 'desc': 'Parque marinho e interação com golfinhos, ao lado da Mambo Beach.'}, {'name': 'Mambo Boulevard (Almoço)', 'lat': 12.0864, 'lng': -68.8979, 'desc': 'Boulevard com restaurantes e lojas — ótimo local para o almoço.'}]}, {'day': 'Dia 2 – Snorkeling perto da cidade', 'color': '#2980b9', 'tip': 'Leve seu equipamento de snorkel e sapatos aquáticos.', 'places': [{'name': 'Playa Caracasbaai', 'lat': 12.0728, 'lng': -68.8616, 'desc': 'Praia mais rústica, ideal para snorkeling.'}, {'name': 'Tugboat Beach', 'lat': 12.0703, 'lng': -68.8588, 'desc': 'Praia famosa pelo navio afundado — snorkeling imperdível.'}, {'name': 'Fort Beekenburg', 'lat': 12.0715, 'lng': -68.8578, 'desc': 'Forte histórico entre Caracasbaai e Tugboat.'}]}, {'day': 'Dia 3 – Passeio de dia inteiro a Klein Curaçao', 'color': '#27ae60', 'tip': 'Use muito protetor solar e leve chapéu — não há sombra natural.', 'places': [{'name': 'Ilha de Klein Curaçao', 'lat': 11.989, 'lng': -68.639, 'desc': 'Passeio de barco (comida incluída), praia paradisíaca e farol abandonado.'}]}, {'day': 'Dia 4 – Oeste médio: natureza e aventura', 'color': '#8e44ad', 'tip': 'Almoce no restaurante acima da Playa Forti com vista panorâmica.', 'places': [{'name': 'Playa Lagun', 'lat': 12.3344, 'lng': -69.152, 'desc': 'Enseada tranquila, ótima para snorkeling com tartarugas.'}, {'name': 'Playa Piskado', 'lat': 12.3693, 'lng': -69.1535, 'desc': 'Praia com tartarugas e pescadores locais.'}, {'name': 'Playa Forti', 'lat': 12.3697, 'lng': -69.1521, 'desc': 'Penhasco para saltar no mar, vista linda e restaurante acima.'}]}, {'day': 'Dia 5 – Praias famosas e instagramáveis', 'color': '#f39c12', 'tip': 'Chegue cedo à Grote Knip para garantir vaga e fotos com menos gente.', 'places': [{'name': 'Grote Knip (Kenepa Grandi)', 'lat': 12.3531, 'lng': -69.1528, 'desc': 'Uma das praias mais belas do Caribe; mar azul turquesa vibrante.'}, {'name': 'Kleine Knip', 'lat': 12.349, 'lng': -69.148, 'desc': 'Praia menor e tranquila, ótima para nadar.'}, {'name': 'Playa Jeremi', 'lat': 12.3462, 'lng': -69.1458, 'desc': 'Praia calma e bonita para relaxar.'}]}, {'day': 'Dia 6 – Praias selvagens e tranquilas', 'color': '#d35400', 'tip': 'Leve lanche, água e guarda-sol — não há estrutura nessas praias.', 'places': [{'name': 'Playa Santu Pretu', 'lat': 12.2927, 'lng': -69.1206, 'desc': 'Praia deserta de areia escura, acesso por trilha.'}, {'name': 'Playa Hundu', 'lat': 12.2855, 'lng': -69.115, 'desc': 'Muito pouco conhecida, ideal para relaxar longe das multidões.'}]}, {'day': 'Dia 7 – Relaxamento e despedida', 'color': '#16a085', 'tip': 'Curta um drink no bar da Kokomo para encerrar a viagem com estilo.', 'places': [{'name': 'Blue Bay Beach', 'lat': 12.1493, 'lng': -68.9906, 'desc': 'Praia privada, estrutura excelente, ideal para descansar.'}, {'name': 'Kokomo Beach', 'lat': 12.1705, 'lng': -69.0146, 'desc': 'Famoso balanço no mar e pôr do sol com drinks.'}]}];
+
+  const map = L.map('map', { zoomControl: true, tap: true }).setView([12.17, -68.99], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18, attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  const boundsAll = L.latLngBounds();
+  const layers = L.control.layers(null, null, { collapsed: true }).addTo(map);
+  const dayGroups = [];
+  let lastVisibleIndex = 0;
+
+  function buildPopup(day, place) {
+    const gmapsPoint = `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`;
+    return `
+      <div>
+        <b>${place.name}</b><br/>
+        <small>${day.day}</small><br/>
+        <div style="margin-top:6px;">${place.desc || ''}</div>
+        <a href="${gmapsPoint}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-weight:800;">Abrir no Google Maps</a>
+        ${ day.tip ? `<div class="tip-badge">💡 Dica: ${day.tip}</div>` : '' }
+      </div>
+    `;
+  }
+
+  DATA.forEach((day, idx) => {
+    const group = L.layerGroup();
+    const latlngs = [];
+    day.places.forEach(p => {
+      const mk = L.circleMarker([p.lat, p.lng], {
+        radius: 9, weight: 2, color: '#fff', fillColor: day.color, fillOpacity: 0.95
+      }).bindPopup(buildPopup(day, p));
+      mk.addTo(group);
+      latlngs.push([p.lat, p.lng]);
+      boundsAll.extend([p.lat, p.lng]);
+    });
+    if (latlngs.length >= 2) {
+      L.polyline(latlngs, { color: day.color, weight: 5, opacity: 0.9 }).addTo(group);
+    }
+    group.addTo(map);
+    layers.addOverlay(group, `<span class='legend-dot' style='background:${day.color}'></span>${day.day}`);
+    dayGroups.push({ group, latlngs, day, idx });
+  });
+
+  function fitAll() {
+    if (boundsAll.isValid()) map.fitBounds(boundsAll.pad(0.15), { animate: true });
+  }
+  fitAll();
+
+  map.on('overlayadd', e => {
+    const i = dayGroups.findIndex(d => d.group === e.layer);
+    if (i >= 0) lastVisibleIndex = i;
+  });
+
+  document.getElementById('fitBtn').addEventListener('click', fitAll);
+  document.getElementById('routeBtn').addEventListener('click', () => {
+    const active = dayGroups[lastVisibleIndex];
+    if (!active) return;
+    const coords = active.latlngs.map(ll => ll[0] + ',' + ll[1]).join('/');
+    if (!coords) return;
+    const url = 'https://www.google.com/maps/dir/' + coords;
+    window.open(url, '_blank', 'noopener');
+  });
+
+  map.on('click', () => map.closePopup());
+</script>
+</body>
+</html>
